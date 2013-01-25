@@ -5,6 +5,8 @@ import (
 	"crypto/hmac"
 	"encoding/base64"
 	"encoding/csv"
+	"os"
+	"strings"
 	"flag"
 	"net/url"
 	"testing"
@@ -144,3 +146,70 @@ func readIn(delimiter string, files <-chan string, records chan-> string) {
 	}
 }
 */
+
+// Record structs hold information about the source and content of an address
+// record.
+type Record struct {
+	Source  string // file name
+	ID      string
+	Sensor  bool
+	Address string
+}
+
+// NewRecord returns a new Record correctly set based on a row from a CSV like
+// unique-id,sensor,address,comp,on,ent,s. filename and n give the origin of
+// the record.
+func NewRecord(row []string, filename string, n int) (Record, error) {
+	var record Record = Record{}
+	if len(row) < 3 {
+		return record, fmt.Errorf("Not enough columns in file %s after %d records",
+			filename, n)
+	}
+	if row[1] == "1" || strings.ToLower(row[1]) == "true" {
+		record.Sensor = true
+	} else if row[1] != "0" && strings.ToLower(row[1]) != "false" {
+		return record, fmt.Errorf("Expected 'true' or 'false' in file %s after %d records",
+			filename, n)
+	}
+	for _, col := range row[2:] {
+		record.Address += col
+	}
+	record.Source = filename
+	record.ID = row[0]
+	return record, nil
+}
+
+// NewLazyCSVReader returns a new *csv.Reader with many of the checks turned off
+func NewLazyCSVReader(f *os.File, delimiter rune) *csv.Reader {
+	var reader *csv.Reader
+	reader = csv.NewReader(f)
+	reader.LazyQuotes = true
+	reader.TrailingComma = true
+	reader.TrimLeadingSpace = true
+	reader.FieldsPerRecord = -1
+	reader.Comma = delimiter
+	return reader
+}
+
+// ReadRecords takes a given open CSV file and reads in records and writes them
+// to and output channel.
+func ReadRecords(f *os.File, delimiter rune, output chan<- Record) (n int, err error) {
+	if output == nil {
+		panic("ReadRecords output channel argument is nil.")
+	}
+	var row []string
+	var reader *csv.Reader = NewLazyCSVReader(f, delimiter)
+	for {
+		row, err = reader.Read()
+		if err != nil {
+			return n, err
+		}
+		record, err := NewRecord(row, f.Name(), n)
+		if err != nil {
+			return n, err
+		}
+		output <- record
+		n++
+	}
+	return
+}
