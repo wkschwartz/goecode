@@ -47,7 +47,7 @@ func GetURL(address string, sensor bool, client string) (url.URL, error) {
 // SignURL uses HMAC+SHA1 to sign the path+query of a URL with a string key.
 // See https://developers.google.com/maps/documentation/business/webservices
 func SignURL(toSign *url.URL, key string) error {
-	var []byte
+	var decodeKey []byte
 	decodeKey, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return err
