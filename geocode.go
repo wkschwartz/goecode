@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	GeocodingAPIVersion        = "V2"
-	HostURL             string = "https://maps.googleapis.com/maps/api/geocode/json"
+	GeocodingAPIVersion = "V2"
+	HostURL             = "https://maps.googleapis.com/maps/api/geocode/json"
 )
 
 /*
