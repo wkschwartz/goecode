@@ -8,6 +8,10 @@ import (
 	"flag"
 	"net/url"
 	"testing"
+	"crypto/sha1"
+	"hash"
+	"fmt"
+	"errors"
 )
 
 const (
@@ -25,9 +29,9 @@ type config struct {
 */
 // GetURL generates an unsigned query URL for the Google Maps API.
 // See https://developers.google.com/maps/documentation/geocoding/
-func GetURL(address string, sensor bool, client string) (url.URL, error) {
-	var result url.URL
-	result, err = url.URL.Parse(HostURL)
+func GetURL(address string, sensor bool, client string) (*url.URL, error) {
+	var result *url.URL
+	result, err := url.Parse(HostURL)
 	if err != nil {
 		panic(err) // baseURL is a const so this should never fail.
 	}
@@ -36,7 +40,7 @@ func GetURL(address string, sensor bool, client string) (url.URL, error) {
 	query.Set("sensor", url.QueryEscape(fmt.Sprint(sensor)))
 	if client != "" {
 		if client[:3] != "gme-" {
-			return nil, error.New("invalid client id")
+			return nil, errors.New("invalid client id")
 		}
 		query.Set("client", url.QueryEscape(client))
 	}
@@ -47,13 +51,13 @@ func GetURL(address string, sensor bool, client string) (url.URL, error) {
 // SignURL uses HMAC+SHA1 to sign the path+query of a URL with a string key.
 // See https://developers.google.com/maps/documentation/business/webservices
 func SignURL(toSign *url.URL, key string) error {
-	var decodeKey []byte
-	decodeKey, err := base64.URLEncoding.DecodeString(key)
+	var decodedKey []byte
+	decodedKey, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return err
 	}
 	var urlHash hash.Hash = hmac.New(sha1.New, decodedKey)
-	_, err := urlHash.Write(toSign.RequestURI())
+	_, err = urlHash.Write([]byte(toSign.RequestURI()))
 	if err != nil {
 		return err
 	}
@@ -61,6 +65,7 @@ func SignURL(toSign *url.URL, key string) error {
 	var query url.Values = toSign.Query()
 	query.Set("signature", signature)
 	toSign.RawQuery = query.Encode()
+	return nil
 }
 
 func TestSignURL(t *testing.T) {
@@ -72,8 +77,12 @@ func TestSignURL(t *testing.T) {
 		egSignature     = "KrU1TzVQM7Ur0i8i7K3huiw3MsA="
 		egSignedURL     = "http://maps.googleapis.com/maps/api/geocode/json?address=New+York&sensor=false&client=clientID&signature=KrU1TzVQM7Ur0i8i7K3huiw3MsA="
 	)
-	var result *url.URL = &url.Parse(egURL)
-	err := SignURL(result, egKey)
+	var result *url.URL
+	result, err := url.Parse(egURL)
+	if err != nil {
+		t.Error(err)
+	}
+	err = SignURL(result, egKey)
 	if err != nil {
 		t.Error(err)
 	}
