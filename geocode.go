@@ -2,17 +2,17 @@
 package main
 
 import (
+	"crypto/hmac"
+	"encoding/base64"
+	"encoding/csv"
 	"flag"
 	"net/url"
-	"encoding/csv"
-	"encoding/base64"
-	"crypto/hmac"
 	"testing"
 )
 
 const (
-	GeocodingAPIVersion = "V2"
- HostURL string = "https://maps.googleapis.com/maps/api/geocode/json"
+	GeocodingAPIVersion        = "V2"
+	HostURL             string = "https://maps.googleapis.com/maps/api/geocode/json"
 )
 
 /*
@@ -66,11 +66,11 @@ func SignURL(toSign *url.URL, key string) error {
 func TestSignURL(t *testing.T) {
 	t.Parallel()
 	const (
-		egURL = "http://maps.googleapis.com/maps/api/geocode/json?address=New+York&sensor=false&client=clientID"
-		egKey = "vNIXE0xscrmjlyV-12Nj_BvUPaw="
+		egURL           = "http://maps.googleapis.com/maps/api/geocode/json?address=New+York&sensor=false&client=clientID"
+		egKey           = "vNIXE0xscrmjlyV-12Nj_BvUPaw="
 		egPortionToSign = "/maps/api/geocode/json?address=New+York&sensor=false&client=clientID"
-		egSignature = "KrU1TzVQM7Ur0i8i7K3huiw3MsA="
-		egSignedURL = "http://maps.googleapis.com/maps/api/geocode/json?address=New+York&sensor=false&client=clientID&signature=KrU1TzVQM7Ur0i8i7K3huiw3MsA="
+		egSignature     = "KrU1TzVQM7Ur0i8i7K3huiw3MsA="
+		egSignedURL     = "http://maps.googleapis.com/maps/api/geocode/json?address=New+York&sensor=false&client=clientID&signature=KrU1TzVQM7Ur0i8i7K3huiw3MsA="
 	)
 	var result *url.URL = &url.Parse(egURL)
 	err := SignURL(result, egKey)
