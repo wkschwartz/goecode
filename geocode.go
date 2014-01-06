@@ -7,13 +7,13 @@ import (
 	"encoding/csv"
 	"os"
 	"strings"
-	"flag"
+	//	"flag"
+	"crypto/sha1"
+	"errors"
+	"fmt"
+	"hash"
 	"net/url"
 	"testing"
-	"crypto/sha1"
-	"hash"
-	"fmt"
-	"errors"
 )
 
 const (
@@ -21,14 +21,12 @@ const (
 	HostURL             = "https://maps.googleapis.com/maps/api/geocode/json"
 )
 
-/*
 type config struct {
-	qps int //queries per second
-	key string
-	id string
-	files []string
+	QPS      int //queries per second
+	Key      string
+	ClientID string
 }
-*/
+
 // GetURL generates an unsigned query URL for the Google Maps API.
 // See https://developers.google.com/maps/documentation/geocoding/
 func GetURL(address string, sensor bool, client string) (*url.URL, error) {
@@ -193,14 +191,11 @@ func NewLazyCSVReader(f *os.File, delimiter rune) *csv.Reader {
 
 // ReadRecords takes a given open CSV file and reads in records and writes them
 // to and output channel.
-func ReadRecords(f *os.File, delimiter rune, output chan<- Record) (n int, err error) {
+func ReadRecords(f *os.File, delim rune, output chan<- Record) (n int, err error) {
 	if output == nil {
 		panic("ReadRecords output channel argument is nil.")
 	}
-	var row []string
-	var reader *csv.Reader = NewLazyCSVReader(f, delimiter)
-	for {
-		row, err = reader.Read()
+	for reader := NewLazyCSVReader(f, delim); row, err := reader.Read(); n++ {
 		if err != nil {
 			return n, err
 		}
@@ -209,7 +204,6 @@ func ReadRecords(f *os.File, delimiter rune, output chan<- Record) (n int, err e
 			return n, err
 		}
 		output <- record
-		n++
 	}
 	return
 }
